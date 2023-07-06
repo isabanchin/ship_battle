@@ -1,6 +1,6 @@
 from random import randint
 
-class ShutExceptions:
+class ShotExceptions:
     def __init__(self, x, y):  # ship_list shot_list
         self.x = x
         self.y = y
@@ -12,12 +12,11 @@ class ShutExceptions:
             return 'BoardOutException'
 
 
-# c = ShutExceptions(2, 3)
+# c = ShotExceptions(2, 3)
 # print(c.in_board())
 
 
 class Dot:
-
     def __init__(self, x, y):
         self.x = x
         self.y = y
