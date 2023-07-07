@@ -1,255 +1,157 @@
 from random import randint
 
-class ShotExceptions:
-    def __init__(self, x, y):  # ship_list shot_list
-        self.x = x
-        self.y = y
-
-    def in_board(self):
-        if 1 <= self.x <= 6 and 1 <= self.y <= 6:
-            return True
-        else:
-            return 'BoardOutException'
-
-
-# c = ShotExceptions(2, 3)
-# print(c.in_board())
-
-
-class Dot:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-
-    def in_set (self, *args):
-        return (self.x, self.y) in set(*args)
-
-# w = [(2, 4), (2, 5), (2, 6)]
-# v = Dot(2, 3)
-#
-# print('v in w = ', v in set(w), v, set(w))
-# print('in_dot function: ', v.in_set(w))
-
-
-class Ship:
-    def __init__(self, lenth):
-        self.lenth = lenth
-
-    def dots(self):
-        ship = []
-        ship_dots = []
-        self.direction = 'h' if randint(0,1) == 0 else 'v'
-        self.x = randint(1, 7 - self.lenth) if self.direction == 'h' else randint(1, 6)
-        self.y = randint(1, 7 - self.lenth) if self.direction == 'v' else randint(1, 6)
-        ship = [self.lenth, self.direction, self.x, self.y, self.lenth]
-        dx, dy = 0, 0
-        for i in range(0, self.lenth):
-            ship_dots.append((self.x + dx, self.y + dy))
-            if self.direction == 'h':
-                dx += 1
-            else:
-                dy += 1
-        return ship_dots, ship
-
-S = Ship(3)
-ship_dots, ship = S.dots()
-print(f'точки: {ship_dots}, корабль: {ship}')
-print(S.x)
-
-
-class Board:
-    board = [['O' for i in range(0,6)] for j in range(0,6)]
-    shot_list = []
-    ship_list = []
-
-    def add_ship(self, ship_dots):
-        ok = True
-        for i in ship_dots:
-            x, y = i[0], i[1]
-            ok = ok * True if self.board[y-1][x-1] == 'O' else False
-        if ok:
-            for i in ship_dots:
-                x, y = i[0], i[1]
-                self.board[y - 1][x - 1] = '8'
-        return ok
-
-    def contour(self, ship_dots):
-        contour = set()
-        for i in ship_dots:
-            x, y = i[0], i[1]
-            cell_contour = {(min(6, x + 1), y), (max(1, x - 1), y), (x, min(6, y + 1)), (x, max(1, y - 1))}
-            contour = contour.union(cell_contour)
-        contour = contour.difference(ship_dots)
-        return contour
-
-# B = Board()
-# print('countour: ', B.contour([(5, 2), (5, 3), (5, 4)]))
-#
-# board =[['O' for i in range(0, 6)] for j in range(0,6)]
-# for i in board:
-#     print(i)
-
-    def show_board (self, hid):
-        field = [[' ', 1, 2, 3, 4, 5, 6]]
-        for i in range(1, 6):
-            field.append([i, self.board[i][0], self.board[i][1], self.board[i][2], self.board[i][3], self.board[i][4], self.board[i][5]])
-        for i in range (0,6):
-            print(' |'.join(map(str, field[i])))
-
-# b1 = Board()
-# print('ща будет доска')
-# b1.show_board(True)
-
-    def shot(self, x, y):
-        if 1 <= x <= 6 and 1 <= y <= 6:
-            shot = Dot(x,y)
-            if shot.in_set(self.shot_list):
-                print('DoubleShot')
-                return False
-            else:
-                self.shot_list.append((x, y))
-                return True
-        else:
-            print('BoardOutException')
-            return False
-
-
-shot_list = [(3, 2), (4, 2), (5, 2)]
-x, y = 3, 3
-b1 = Board()
-print('ща будет выстрел')
-print(b1.shot(x, y))
-
+# вводные правила
+l = [3, 2, 2, 1, 1, 1, 1]  # набор кораблей
+field = 6                  # размер игрового поля, клеток
 
 class Player:
-    self_board = Board()
-    opponent_board = Board()
-    def move(self):
-        x, y = self.opponent_board.board.ask()
-        if not (x, y).issubset(set(self_board.shot_list)):
-            self_board.shot_list.append((x, y))
-            if (x, y).issubset(set(opponent_board.ship_list)):
-                on_target = True
-                self.opponent_board.board[y - 1][x - 1] = 'X'
-            else:
-                on_target = False
-                self.opponent_board.board[y - 1][x - 1] = 'T'
-        return on_target
+    live = len(l)
+    def add_ship(self, l): # ships installing: In: ship lenth list. Out: initional ships and board class attributes
+        self.self_board = [['O' for i in range(0, field)] for j in range(0, field)]
+        self.ship_list = []
+        self.ship_dots = set()
+        self.contour_dots = set()
+        counter = 0
+        for i, value in enumerate(l):
+            ok = False
+            while not ok:                     # ship rnd one by one
+                counter += 1
+                if counter == 2000:
+                    return False
+                lenth = l[i]
+                _dots = []
+                _contour = set()
+                direction = 'h' if randint(0, 1) == 0 else 'v'
+                x = randint(1, field + 1 - lenth) if direction == 'h' else randint(1, field)
+                y = randint(1, field + 1 - lenth) if direction == 'v' else randint(1, field)
+                dx, dy = 0, 0
+                for n in range(0, lenth):                                   # every ship and contour dots generation
+                    _dots.append((x + dx, y + dy))
+                    if direction == 'h':
+                        dx += 1
+                    else:
+                        dy += 1
+# check ship is ok:
+                ok = False if set(_dots).intersection(set(self.ship_dots)) or set(_dots).intersection(set(self.contour_dots)) else True
+# if ok = True then contour dots generation else go back to recycle:
+            _contour = set()
+            for n in (_dots):  # every ship and contour dots generation
+                x, y = n
+                _contour = _contour.union(
+                    {(max(x - 1, 1), max(y - 1, 1)), (x, max(y - 1, 1)), (min(x + 1, field), max(y - 1, 1)),
+                     (max(x - 1, 1), y), (min(x + 1, field), y),
+                     (max(x - 1, 1), min(y + 1, field)), (x, min(y + 1, field)),
+                     (min(x + 1, field), min(y + 1, field))})
+# check ship place is ok:
+            ok = False if set(_dots).intersection(self.ship_dots) or set(_dots).intersection(set(self.contour_dots)) else True
+# Update self.ship_list, ship_dots, self.contour_dots by new ship:
+            self.ship_list.append([l[i], direction, x, y, l[i], _dots, _contour])
+            self.ship_dots = self.ship_dots.union(set(_dots))
+            self.contour_dots = self.contour_dots.union(_contour.difference(_dots))
+# Ships to board:
+        for i in self.ship_dots:
+            x, y = i[0], i[1]
+            self.self_board[y - 1][x - 1] = '■' if self.hide_self_board == False else 'O'
+        # print(f'{self}, {self.self_board}')
+        return True
+
+    def show_board (self, board):
+        one_string = [n for n in range(1, field+1)]  # корявые три строки преобразования - найти способ короче
+        one_string.insert(0, ' ')
+        console_board = [one_string]
+        for i in range(field):
+            one_string = board[i].copy()              # корявые три строки преобразования - найти способ короче
+            one_string.insert(0, i+1)
+            console_board.append(one_string)
+        for i in range (0,field+1):
+            print(' | '.join(map(str, console_board[i])), '|')
+
+    def shot(self, x, y):
+        self.self_board[y - 1][x - 1] = 'T'
+        for i in self.ship_list:
+            if (x, y) in i[5]:
+                i[4] -= 1
+                self.self_board[y-1][x-1] = 'X'
+                if i[4] == 0:
+                    self.live -= 1
+                    print(f'{i[0]}-палубный корабль убит, осталось {self.live} кореблей')
+                else:
+                    print(f'{i[0]}-палубный корабль ранен')
+        if self.live == 0:
+            return True
+        else:
+            return False
 
 class User(Player):
+    hide_self_board = False
+    shot_list = []
 
-    def ask(self):   # допилить выход из функции
+    def ask(self):
         _end = False
         while not _end:
             try:
                 x, y = input('Input X and Y by space:\t').split()
-                x = int(x)
-                y = int(y)
+                x, y = int(x), int(y)
             except ValueError as e:
                 print(e)
                 _end = False
             else:
-                _end = shot(x, y)
+                if 1 <= x <= 6 and 1 <= y <= 6:
+                    if (x, y) in set(self.shot_list):
+                        print("Wrong coordinates: it's alredy shoted")
+                    else:
+                        _end = True
+                else:
+                    print('Coordinate out of range from 1 to 6')
+        self.shot_list.append((x,y))
         return x, y
+
 class AI(Player):
+    hide_self_board = True
+    shot_list = []
+
     def ask(self):
-        x = randint(1, 6)
-        y = randint(1, 6)
+        _end = False
+        while not _end:
+            x, y = randint(1, field), randint(1, field)
+            if (x, y) not in set(self.shot_list):
+                _end = True
+        print(f'AI shot is {x}, {y}')
+        self.shot_list.append((x,y))
         return x, y
 
 
+user1 = User()
+pc1 = AI()
+while not user1.add_ship(l):
+    pass
+while not pc1.add_ship(l):
+    pass
+print(f'user1 ship count = {len(user1.ship_list)}, ship list: {user1.ship_list}')
+print(f'pc1 ship count = {len(pc1.ship_list)}, ship list: {pc1.ship_list}')
+
+while True:
+    print('User board:')
+    pc1.show_board(user1.self_board)
+    print('AI board:')
+    user1.show_board(pc1.self_board)
+
+    x, y = user1.ask()
+    user1_win = pc1.shot(x, y)
+    if user1_win:
+        win = 'User'
+        break
+
+    x, y = pc1.ask()
+    pc1_win = user1.shot(x, y)
+    if pc1_win:
+        win = 'AI'
+        break
+
+print('User board:')
+pc1.show_board(user1.self_board)
+print('AI board:')
+user1.show_board(pc1.self_board)
+print(f'Game over. {win} win')
 
 
-
-
-#
-# inp = False
-# while not inp:
-#     a = ShutExceptions()
-#     x, y, inp = a.check_inp()
-# print(x, y, inp)
-#
-#
-# def ask(self):
-#     try:
-#         x, y = input('Input X and Y by space:\t').split()
-#         self.x = int(x)
-#         self.y = int(y)
-#     except ValueError as e:
-#         print(e)
-#         return None, None, False
-#     else:
-#         return a.in_board(self.x, self.y)
-# #
-#
-# class Ship:
-#
-#     def dots(self, s):
-#         ship_dots = []
-#         for i in s:
-#             dx, dy = 0, 0
-#             print('s=', s)
-#             for j in range(0, i[0]):
-#                 ship_dots.append((i[2] + dy, i[3] + dx))
-#                 if i[1] == 'h':
-#                     dx += 1
-#                 else:
-#                     dy += 1
-#         return ship_dots
-#
-#
-# p_ships = [[3, 'h', 2, 3, 3], [2, 'v', 1, 4, 2],]
-# ship = Ship()
-# # print(ship.dots(p_ships))
-# # print(set(ship.dots(p_ships)))
-#
-# class Board:
-#     board = None
-#     hid = None
-#     alive = None
-#     # def __init__(self, board, ship, hid, alive):
-#     #     self.field = board
-#     #     self.ship = ship
-#     #     self.hid = hid
-#     #     self.alive = alive
-#
-#     def add_ship(self, list):
-#         s = []
-#         ship = Ship()
-#         for n, value in enumerate(list):
-#             _dots_set = set(ship.dots(s)) if len(s) > 0 else set()
-#             print('ship:', ship)
-#             bad_place = True
-#             while bad_place:
-#                 _s = []
-#                 _s.append(value)
-#                 _s.append('h' if randint(0,1) == 0 else 'v')
-#                 _s.append(randint(1, 7 - list[n]) if _s[1] == 'h' else randint(1, 6))
-#                 _s.append(randint(1, 7 - list[n]) if _s[1] == 'v' else randint(1, 6))
-#                 _s.append(value)
-#                 print('_s = ', _s)
-#                 _S = []
-#                 _S.append(_s)
-#                 build_ship = Ship()
-#                 build_ship_set = set(build_ship.dots(_S))
-#                 bad_place = bool(_dots_set.intersection(build_ship_set))
-#                 print('Ships = ', _dots_set, '\n', s)
-#                 print('build_ship = ', build_ship_set, '\n', _s)
-#                 print('bad place = ', bad_place)
-#                 k = input()
-#                 if bad_place == False:
-#                     s.append(_s)
-#                     print('False _s = ', s)
-#         print('_S = ',_S)
-#         print('s = ',s)
-#         return(s)
-#
-# #     def counour(self, one_ship):
-# #
-# #     def show_board(self, board, ship, hid):
-# #
-#
-# list = (3, 2, 2, 1, 1, 1, 1)
-# player_board = Board()
-# s = player_board.add_ship(list)
-# print('player ships:', s)
